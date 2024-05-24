@@ -17,30 +17,48 @@ export default class RssFeedsController {
       return response.unprocessableEntity({ error: 'Feed not found.' })
     }
 
+    // here we recall the feed. so updated the recall_at time.
+    await feed.merge({ recallAt: DateTime.now() }).save()
+
     const parser = new RssParser()
     const result: any = await parser.parseURL(feed.sourceUrl)
 
     if (result.items.length > 0) {
       for (const aFeed of result.items) {
         const thisFeed: any = {
-          creator: aFeed.creator,
-          title: aFeed.title,
-          link: aFeed.link,
-          content: aFeed.content,
-          published_at: aFeed.pubDate ? DateTime.fromRFC2822(aFeed.pubDate) : DateTime.now(),
-          source: feed.sourceName,
-          rss_feed_id: feed.id,
-          response: JSON.stringify(aFeed),
-          image_url: aFeed.enclosure ? aFeed.enclosure.url : '',
+          creator: aFeed.creator ?? null,
+          title: aFeed.title ?? null,
+          link: aFeed.link ?? null,
+          content: aFeed.content ?? null,
+          published_at: this.parseDateTime(aFeed.pubDate),
+          source: feed.sourceName ?? null,
+          rss_feed_id: feed.id ?? null,
+          response: JSON.stringify(aFeed) ?? null,
+          image_url: aFeed.enclosure ? aFeed.enclosure.url : null,
         }
 
         await Feed.updateOrCreate({ title: thisFeed.title }, thisFeed)
       }
-      return response.json({
-        feeds: await Feed.query().where('rss_feed_id', feed.id).orderBy('created_at'),
-      })
     }
 
-    return response.json({ feed: [] })
+    return response.json({
+      feeds: await Feed.query().where('rss_feed_id', feed.id).orderBy('created_at', 'desc'),
+    })
+  }
+
+  private parseDateTime(datetime: any): DateTime {
+    // Try parsing as ISO 8601
+    let parsedDate = DateTime.fromISO(datetime)
+    if (parsedDate.isValid) {
+      return parsedDate
+    }
+
+    // Try parsing as RFC 2822
+    parsedDate = DateTime.fromRFC2822(datetime)
+    if (parsedDate.isValid) {
+      return parsedDate
+    }
+
+    return DateTime.now()
   }
 }
