@@ -6,4 +6,5 @@ router.get('/', async () => {
 })
 
 router.get('/rss-feed', [RssFeedsController, 'index'])
+router.get('/rss-feed/sync', [RssFeedsController, 'sync'])
 router.get('/rss-feed/:id', [RssFeedsController, 'show'])
