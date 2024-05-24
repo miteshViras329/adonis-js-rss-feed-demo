@@ -5,6 +5,12 @@ export default class RssFeed extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
 
+  @column()
+  declare sourceName: string | null
+
+  @column()
+  declare sourceUrl: string
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 
